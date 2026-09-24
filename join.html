@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>加入房间</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <button class="topbar__back" id="back" type="button">‹</button>
+      <div class="topbar__title">加入房间</div>
+    </div>
+
+    <div class="form-card">
+      <div class="label">房间号</div>
+      <input class="input with-gap" id="roomId" placeholder="粘贴或输入房间号" />
+      <div class="hint">房间号由房主分享给你，通常在邀请链接里</div>
+
+      <div class="label">房间密码（如需）</div>
+      <input class="input" id="password" placeholder="房间未设密码可留空" maxlength="32" type="password" />
+    </div>
+
+    <button class="submit" id="submit" type="button">加入房间</button>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script src="join.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>登录 · 青番</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="login-body">
+  <main class="login">
+    <div class="topbar">
+      <button class="topbar__back" id="back" type="button">‹</button>
+      <div class="topbar__title">登录 / 注册</div>
+    </div>
+
+    <!-- 品牌 -->
+    <div class="login__brand">
+      <div class="login__tomato">🍅</div>
+      <div class="login__name">青番</div>
+      <div class="login__slogan">QINGFAN · AI POMODORO</div>
+    </div>
+
+    <!-- 已登录状态 -->
+    <div class="login__panel" id="loggedPanel" hidden>
+      <div class="login__logged">当前账号：<b id="loggedName"></b></div>
+      <button class="login__btn" id="logoutBtn" type="button">退出登录</button>
+    </div>
+
+    <!-- 登录 / 注册 -->
+    <div class="login__panel" id="authPanel">
+      <div class="tabs">
+        <button class="tab is-on" data-mode="login" type="button">登录</button>
+        <button class="tab" data-mode="register" type="button">注册</button>
+      </div>
+
+      <!-- 登录 -->
+      <div id="loginForm">
+        <div class="field">
+          <span class="field__prefix">+86</span>
+          <input class="field__input" id="loginPhone" placeholder="手机号" maxlength="20" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <input class="field__input" id="loginPwd" type="password" placeholder="密码" maxlength="20" />
+        </div>
+        <button class="login__btn" id="doLogin" type="button">登录</button>
+        <div class="login__demo">演示账号：13800008888 · 密码 123456</div>
+      </div>
+
+      <!-- 注册 -->
+      <div id="registerForm" hidden>
+        <div class="field">
+          <input class="field__input" id="regName" placeholder="用户名" maxlength="20" />
+        </div>
+        <div class="field">
+          <span class="field__prefix">+86</span>
+          <input class="field__input" id="regPhone" placeholder="手机号" maxlength="20" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <input class="field__input" id="regPwd" type="password" placeholder="密码（至少 6 位）" maxlength="20" />
+        </div>
+        <div class="field">
+          <input class="field__input" id="regPwd2" type="password" placeholder="确认密码" maxlength="20" />
+        </div>
+        <div class="field">
+          <input class="field__input" id="regCode" placeholder="验证码" maxlength="6" inputmode="numeric" />
+          <button class="code-btn" id="sendCode" type="button">获取验证码</button>
+        </div>
+        <button class="login__btn" id="doRegister" type="button">注册</button>
+        <div class="login__demo">演示验证码：1234</div>
+      </div>
+
+      <div class="login__agree">登录即代表同意《用户协议》与《隐私政策》</div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

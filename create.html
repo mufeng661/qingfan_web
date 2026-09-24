@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>创建房间</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <button class="topbar__back" id="back" type="button">‹</button>
+      <div class="topbar__title">创建房间</div>
+    </div>
+
+    <div class="form-card">
+      <div class="label">房间名称</div>
+      <input class="input" id="name" placeholder="例如：考研冲刺自习室" maxlength="60" />
+
+      <div class="switch-row">
+        <div class="label no-margin">设置房间密码</div>
+        <button class="switch" id="pwdSwitch" type="button" aria-pressed="false"></button>
+      </div>
+      <div class="hint">开启后，加入房间需要输入密码</div>
+
+      <input class="input" id="password" placeholder="请输入房间密码" maxlength="32" type="password" hidden />
+    </div>
+
+    <button class="submit" id="submit" type="button">创建房间</button>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script src="create.js"></script>
+</body>
+</html>
