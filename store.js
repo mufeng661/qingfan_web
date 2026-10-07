@@ -107,18 +107,20 @@
   function saveTasks(t) { Store.setAcct('tasks', t); }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  // 新账号首次种入引导待办
+  // 新账号首次进入的「引导待办」：解释待办的作用，以及添加 / 删除 / 开始方法
+  // （只种一次；用户删光后不再重复）
   function seedTasksIfNeeded() {
     if (Store.acct('seeded', false)) return;
     Store.setAcct('seeded', true);
     var now = Date.now();
-    var seed = [
-      ['阅读 25 分钟', 25, 'easy'],
-      ['写一段代码', 25, 'medium'],
-      ['整理今日笔记', 15, 'easy'],
-      ['复盘今天', 5, 'easy'],
-    ].map(function (x, i) {
-      return { id: uid(), title: x[0], durationMin: x[1], status: 'todo', difficulty: x[2], order: i, createdAt: now + i };
+    var texts = [
+      '待办是什么：把任务拆成一个个番茄，逐个专注完成',
+      '怎么添加：点「今日待办」右上角「＋ 添加」新增，可自定义时长',
+      '怎么删除：点待办卡片右侧的「×」即可删除',
+      '怎么开始：点待办右侧的「开始」，进入番茄计时并种下一棵树',
+    ];
+    var seed = texts.map(function (title, i) {
+      return { id: 'guide_' + (i + 1), title: title, durationMin: 25, status: 'todo', difficulty: 'easy', order: i, createdAt: now + i };
     });
     saveTasks(seed);
   }
