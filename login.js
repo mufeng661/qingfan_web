@@ -1,7 +1,7 @@
-// 登录 / 注册（对齐鸿蒙端 Login.ets）
+﻿// 登录 / 注册（对齐鸿蒙端 Login.ets）
 // - 登录：手机号 + 密码 → auth.login
 // - 注册：用户名 + 手机号 + 密码 + 确认密码 + 验证码（演示码 1234）→ auth.register
-// 成功后保存 token 与用户信息，跳回首页。
+// 成功后保存 token 与用户信息，跳回首页（app.html）。
 (function () {
   'use strict';
 
@@ -75,7 +75,7 @@
   function afterAuth(data) {
     auth.setSession(data.token, data.user);
     api.toast('登录成功');
-    setTimeout(function () { location.href = 'index.html'; }, 400);
+    setTimeout(function () { location.href = 'app.html'; }, 400);
   }
 
   function doLogin() {
@@ -106,7 +106,7 @@
       .then(function (data) {
         auth.setSession(data.token, data.user);
         api.toast('注册成功');
-        setTimeout(function () { location.href = 'index.html'; }, 500);
+        setTimeout(function () { location.href = 'app.html'; }, 500);
       })
       .catch(function (err) {
         el.doRegister.disabled = false;
@@ -122,8 +122,7 @@
     api.toast('已退出登录');
   }
 
-  // 事件
-  el.back.addEventListener('click', function () { location.href = 'index.html'; });
+  el.back.addEventListener('click', function () { location.href = 'app.html'; });
   el.tabs.forEach(function (t) {
     t.addEventListener('click', function () { setMode(t.dataset.mode); });
   });
@@ -138,7 +137,6 @@
     n.addEventListener('keydown', function (e) { if (e.key === 'Enter') doRegister(); });
   });
 
-  // 预填演示手机号，方便测试
   el.loginPhone.value = '13800008888';
   renderLogged();
 })();
