@@ -107,22 +107,34 @@
   function saveTasks(t) { Store.setAcct('tasks', t); }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  // 新账号首次进入的「引导待办」：解释待办的作用，以及添加 / 删除 / 开始方法
-  // （只种一次；用户删光后不再重复）
-  function seedTasksIfNeeded() {
-    if (Store.acct('seeded', false)) return;
-    Store.setAcct('seeded', true);
+  // 引导待办文案（对齐 Web 端交互）
+  var GUIDE_TEXTS = [
+    '待办是什么：把任务拆成一个个番茄，逐个专注完成',
+    '怎么添加：点「今日待办」右上角「＋ 添加」新增，可自定义时长',
+    '怎么删除：点待办卡片右侧的「×」即可删除',
+    '怎么开始：点待办右侧的「开始」，进入番茄计时并种下一棵树',
+  ];
+  var OLD_SEED_TEXTS = ['阅读 25 分钟', '写一段代码', '整理今日笔记', '复盘今天'];
+  var SEED_VER = 2;
+
+  function makeGuideTasks() {
     var now = Date.now();
-    var texts = [
-      '待办是什么：把任务拆成一个个番茄，逐个专注完成',
-      '怎么添加：点「今日待办」右上角「＋ 添加」新增，可自定义时长',
-      '怎么删除：点待办卡片右侧的「×」即可删除',
-      '怎么开始：点待办右侧的「开始」，进入番茄计时并种下一棵树',
-    ];
-    var seed = texts.map(function (title, i) {
+    return GUIDE_TEXTS.map(function (title, i) {
       return { id: 'guide_' + (i + 1), title: title, durationMin: 25, status: 'todo', difficulty: 'easy', order: i, createdAt: now + i };
     });
-    saveTasks(seed);
+  }
+
+  // 新账号首次种入引导待办；并做「种子版本迁移」：
+  // - 没有待办 → 种入引导待办
+  // - 只有旧版通用引导待办 → 替换为新版引导待办
+  // - 有用户自己的待办 → 不动
+  function seedTasksIfNeeded() {
+    if (Store.acct('seedVer', 0) >= SEED_VER) return;
+    var tasks = getTasks();
+    var isOldSeed = tasks.length > 0 && tasks.every(function (t) { return OLD_SEED_TEXTS.indexOf(t.title) >= 0; });
+    if (tasks.length === 0 || isOldSeed) saveTasks(makeGuideTasks());
+    Store.setAcct('seedVer', SEED_VER);
+    Store.setAcct('seeded', true);
   }
 
   // ---- 记录 / 统计 ----
