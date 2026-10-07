@@ -19,11 +19,12 @@
 
 ```
 .
-├── app.html        统一应用入口（SPA，推荐）
+├── index.html      入口（自动跳转到 app.html）
+├── app.html        统一应用（SPA，主入口）
 ├── app.css         统一应用样式 + 4 套主题令牌
 ├── app.js          SPA 路由与各页面（今日/专注/时间轴/数据/我的/AI/自习室/引导）
 ├── store.js        本地数据层（按账号隔离）+ 成长逻辑（经验/签到/连续/森林）
-├── index.html      旧版自习室首页
+├── studyroom.html  旧版自习室首页
 ├── create.html     创建房间
 ├── join.html       加入房间
 ├── room.html       房间详情（成员 + 交流）

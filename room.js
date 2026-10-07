@@ -261,14 +261,14 @@
   function leaveRoom() {
     if (!window.confirm('退出后将无法查看房间内交流，确定退出吗？')) return;
     api.call('room.leave', { roomId: roomId })
-      .then(function () { api.toast('已退出'); setTimeout(function () { location.href = 'index.html'; }, 500); })
+      .then(function () { api.toast('已退出'); setTimeout(function () { location.href = 'studyroom.html'; }, 500); })
       .catch(function (err) { api.toast(err.message || '退出失败'); });
   }
 
   function deleteRoom() {
     if (!window.confirm('解散后房间和所有交流记录将不可见，确定解散吗？')) return;
     api.call('room.delete', { roomId: roomId })
-      .then(function () { api.toast('已解散'); setTimeout(function () { location.href = 'index.html'; }, 500); })
+      .then(function () { api.toast('已解散'); setTimeout(function () { location.href = 'studyroom.html'; }, 500); })
       .catch(function (err) { api.toast(err.message || '解散失败'); });
   }
 
@@ -293,7 +293,7 @@
   }
 
   // ---- 事件绑定 ----
-  el.back.addEventListener('click', function () { location.href = 'index.html'; });
+  el.back.addEventListener('click', function () { location.href = 'studyroom.html'; });
   el.toggleMembers.addEventListener('click', function () {
     el.members.hidden = !el.members.hidden;
     el.toggleMembers.textContent = el.members.hidden ? '查看成员' : '收起成员';
