@@ -9,17 +9,31 @@
 <body>
   <div class="app">
     <aside class="sidenav">
-      <div class="sidenav__brand">🍅 青番</div>
-      <div class="sidenav__item" data-route="today"><span class="ic">🌿</span>今日</div>
-      <div class="sidenav__item" data-route="studyroom"><span class="ic">🏫</span>自习室</div>
-      <div class="sidenav__item" data-route="timeline"><span class="ic">🕒</span>时间轴</div>
-      <div class="sidenav__item" data-route="data"><span class="ic">📊</span>数据</div>
-      <div class="sidenav__item" data-route="me"><span class="ic">🙂</span>我的</div>
-      <div class="sidenav__spacer"></div>
-      <div class="sidenav__foot">
-        <button class="btn btn--ghost btn--sm" id="themeBtn" type="button">🎨 切换主题</button>
-        <button class="btn btn--ghost btn--sm" id="userChip" type="button">登录</button>
+      <div class="sidenav__brand">
+        <span class="sidenav__mark">🍅</span>
+        <div>
+          <div class="sidenav__name">青番</div>
+          <div class="sidenav__en">QINGFAN · WEB</div>
+        </div>
       </div>
+      <nav class="sidenav__nav">
+        <div class="sidenav__item" data-route="today"><span class="ic">🌿</span>今日</div>
+        <div class="sidenav__item" data-route="studyroom"><span class="ic">🏫</span>自习室</div>
+        <div class="sidenav__item" data-route="timeline"><span class="ic">🕒</span>时间轴</div>
+        <div class="sidenav__item" data-route="data"><span class="ic">📊</span>数据</div>
+        <div class="sidenav__item" data-route="me"><span class="ic">🙂</span>我的</div>
+      </nav>
+      <div class="sidenav__theme">
+        <div class="sidenav__theme-label">外观主题</div>
+        <div class="sidenav__dots" id="themeDots">
+          <span data-th="green" title="青番绿"></span>
+          <span data-th="dark" title="深夜墨"></span>
+          <span data-th="dawn" title="晨光暖"></span>
+          <span data-th="ocean" title="静谧蓝"></span>
+        </div>
+      </div>
+      <div class="sidenav__spacer"></div>
+      <button class="sidenav__login" id="userChip" type="button">登录 / 注册</button>
     </aside>
 
     <main class="main">

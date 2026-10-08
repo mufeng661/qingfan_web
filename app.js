@@ -894,8 +894,14 @@
   function refreshUserChip() {
     var b = document.getElementById('userChip');
     if (!b) return;
-    if (isLogged()) { b.textContent = auth.getNickname() || '我的'; }
-    else { b.textContent = '登录'; }
+    if (isLogged()) { b.textContent = '已登录 · 账号管理'; b.classList.add('is-in'); }
+    else { b.textContent = '登录 / 注册'; b.classList.remove('is-in'); }
+  }
+  function paintThemeDots() {
+    var cur = D.getTheme();
+    document.querySelectorAll('#themeDots [data-th]').forEach(function (n) {
+      n.classList.toggle('is-on', n.dataset.th === cur);
+    });
   }
 
   function renderRoute() {
@@ -903,6 +909,7 @@
     var fn = ROUTES[name] || ROUTES.today;
     renderShellNav();
     refreshUserChip();
+    paintThemeDots();
     fn();
   }
 
@@ -923,9 +930,10 @@
   document.querySelectorAll('[data-route]').forEach(function (n) {
     n.addEventListener('click', function () { go(n.dataset.route === 'studyroom' && !isLogged() ? 'studyroom' : n.dataset.route); });
   });
-  var themeBtn = document.getElementById('themeBtn');
-  if (themeBtn) themeBtn.addEventListener('click', function () {
-    var ks = D.THEME_KEYS; var i = ks.indexOf(D.getTheme()); D.setTheme(ks[(i + 1) % ks.length]); go('me');
+  var themeDots = document.getElementById('themeDots');
+  if (themeDots) themeDots.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-th]'); if (!n) return;
+    D.setTheme(n.dataset.th); paintThemeDots();
   });
   var userChip = document.getElementById('userChip');
   if (userChip) userChip.addEventListener('click', function () { location.href = 'login.html'; });
