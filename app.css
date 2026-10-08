@@ -187,26 +187,23 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
 
 /* ===== 专注 ===== */
 .focus-screen {
-  position: fixed; inset: 0; z-index: 80;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, var(--leaf-deep), var(--leaf));
-  color: #fff; padding: 24px; overflow: auto;
+  position: relative;
+  min-height: calc(100vh - 60px);
+  display: flex; flex-direction: column;
+  background: linear-gradient(160deg, var(--brand1), var(--brand2));
+  border: 1px solid var(--line); border-radius: 24px;
+  padding: 16px 18px 30px; color: var(--ink);
 }
-.focus-screen__top {
-  position: absolute; top: 0; left: 0; right: 0;
-  display: flex; align-items: center; gap: 10px; padding: 16px 18px;
-}
+.focus-screen__top { display: flex; align-items: center; gap: 10px; }
 .focus-screen__sub {
   flex: 1; min-width: 0; text-align: center;
-  font-family: Georgia, "Songti SC", serif; font-size: 15px; color: #fff;
+  font-family: Georgia, "Songti SC", serif; font-size: 15px; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.focus-screen__no { flex: none; font-size: 11.5px; color: rgba(255, 255, 255, 0.85); }
-.focus-screen .focus-top__back { color: #fff; }
-.focus-screen .focus-top__back:hover { background: rgba(255, 255, 255, 0.14); }
-.focus-screen__body { display: flex; flex-direction: column; align-items: center; }
-.focus-screen .pill { background: rgba(255, 255, 255, 0.22); color: #fff; border: 1px solid transparent; }
-.focus-screen .pill.is-on { background: rgba(255, 255, 255, 0.92); color: var(--tomato); font-weight: 700; }
+.focus-screen__no { flex: none; font-size: 11.5px; color: var(--ink3); }
+.focus-screen .focus-top__back { color: var(--ink); }
+.focus-screen .focus-top__back:hover { background: var(--surface2); }
+.focus-screen__body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 6px; }
 
 .focus-top { display: flex; align-items: center; gap: 10px; }
 .focus-top__back {
@@ -228,7 +225,7 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
 }
 .focus-ring { position: relative; width: 230px; height: 230px; margin: 2px auto 0; }
 .focus-ring svg { display: block; overflow: visible; }
-.focus-ring__time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.focus-ring__time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
 .focus-ring__time b {
   font-family: Georgia, serif; font-size: 40px; letter-spacing: 0.02em;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
@@ -241,16 +238,16 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
 .focus-ctl { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 18px; }
 .focus-btn {
   border: none; border-radius: 999px; padding: 14px 36px; font-size: 16px; font-weight: 700;
-  color: var(--tomato); background: rgba(255, 255, 255, 0.95); cursor: pointer;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18); transition: transform .12s ease, background .15s ease;
+  color: #fff; background: var(--leaf); cursor: pointer;
+  box-shadow: 0 12px 26px rgba(110, 155, 87, 0.32); transition: transform .12s ease, background .15s ease;
 }
-.focus-btn:hover { background: #fff; transform: translateY(-1px); }
+.focus-btn:hover { background: var(--leaf-deep); transform: translateY(-1px); }
 .focus-btn.is-run {
-  color: #fff; background: rgba(255, 255, 255, 0.22); box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: var(--leaf-deep); background: var(--surface);
+  border: 1px solid var(--leaf); box-shadow: none;
 }
-.focus-exit { border: none; background: transparent; color: rgba(255, 255, 255, 0.85); font-size: 13px; cursor: pointer; }
-.focus-exit:hover { color: #fff; text-decoration: underline; }
+.focus-exit { border: none; background: transparent; color: var(--ink2); font-size: 13px; cursor: pointer; }
+.focus-exit:hover { color: var(--ink); text-decoration: underline; }
 
 .pick-row { display: flex; gap: 12px; }
 .bg-pick { flex: 1; cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: center; }
