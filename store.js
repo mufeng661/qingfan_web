@@ -59,6 +59,37 @@
     setAcct: function (k, v) { write(NS + k + ':' + userKey(), v); },
   };
 
+  // ---- 云端同步（三端互通：待办 / 专注记录 / 统计 / 资料）----
+  function isLogged() {
+    var a = window.QingfanAuth;
+    return !!(a && a.isLoggedIn());
+  }
+  function push(action, payload) {
+    if (!isLogged() || !window.QingfanApi) return;
+    try {
+      var p = window.QingfanApi.call(action, payload);
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) { /* ignore */ }
+  }
+  var _lastPull = 0;
+  function cloudPull(force) {
+    if (!isLogged() || !window.QingfanApi) return Promise.resolve(false);
+    var now = Date.now();
+    if (!force && now - _lastPull < 5000) return Promise.resolve(false);
+    _lastPull = now;
+    return window.QingfanApi.call('data.pull', {}).then(function (d) {
+      if (!d) return false;
+      if (Array.isArray(d.tasks)) Store.setAcct('tasks', d.tasks);
+      if (Array.isArray(d.records)) Store.setAcct('records', d.records);
+      if (d.stats && typeof d.stats === 'object') Store.setAcct('stats', d.stats);
+      if (d.profile && typeof d.profile === 'object' && Object.keys(d.profile).length) {
+        var local = Store.acct('profile', {}) || {};
+        Store.setAcct('profile', Object.assign({}, local, d.profile));
+      }
+      return true;
+    }).catch(function () { return false; });
+  }
+
   // ---- 主题 ----
   function getTheme() {
     var t = Store.get('theme', 'green');
@@ -92,7 +123,7 @@
     if (!p) { p = defaultProfile(); Store.setAcct('profile', p); }
     return p;
   }
-  function saveProfile(p) { Store.setAcct('profile', p); }
+  function saveProfile(p) { Store.setAcct('profile', p); push('data.saveProfile', { profile: p }); }
   function nextLevelExp(level) { return level * 300; }
   function addExp(n) {
     var p = getProfile();
@@ -104,7 +135,7 @@
 
   // ---- 待办 ----
   function getTasks() { return Store.acct('tasks', []); }
-  function saveTasks(t) { Store.setAcct('tasks', t); }
+  function saveTasks(t) { Store.setAcct('tasks', t); push('data.saveTasks', { tasks: t }); }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   // 引导待办文案（对齐 Web 端交互）
@@ -154,6 +185,8 @@
     }
     stats[d] = s;
     Store.setAcct('stats', stats);
+    push('data.addRecord', { record: r });
+    push('data.saveStats', { stats: stats });
   }
   function getStats() { return Store.acct('stats', {}); }
   function bumpDoneTask() {
@@ -163,11 +196,22 @@
     s.doneTaskCount += 1;
     stats[d] = s;
     Store.setAcct('stats', stats);
+    push('data.saveStats', { stats: stats });
   }
 
   // ---- 挑战 ----
-  function getGoal() { return Store.acct('goal', 4); }
-  function setGoal(n) { Store.setAcct('goal', Math.max(1, Math.min(20, n))); }
+  function getGoal() {
+    var p = getProfile();
+    if (p && p.challengeGoal != null) return p.challengeGoal;
+    return Store.acct('goal', 4);
+  }
+  function setGoal(n) {
+    var v = Math.max(1, Math.min(20, n));
+    Store.setAcct('goal', v);
+    var p = getProfile();
+    p.challengeGoal = v;
+    saveProfile(p);
+  }
 
   // ---- 成长 ----
   function todayFocusMinutes() {
@@ -233,5 +277,6 @@
     getGoal: getGoal, setGoal: setGoal,
     todayFocusMinutes: todayFocusMinutes, totalPomodoro: totalPomodoro, totalFocusMinutes: totalFocusMinutes,
     trees: trees, computeStreak: computeStreak, isSignedToday: isSignedToday, signInToday: signInToday,
+    cloudPull: cloudPull,
   };
 })();

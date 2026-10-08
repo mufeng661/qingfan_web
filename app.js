@@ -566,133 +566,285 @@
     return '<div class="between" data-more="' + more + '" style="padding:10px 0;cursor:pointer"><span>' + icon + ' ' + label + '</span><span class="muted3">›</span></div>';
   }
 
-  // ================= 自习室 =================
-  var sr = { rooms: [], room: null, comments: [], replyTo: null, isOwner: false, members: [] };
+  // ================= 自习室（单房间详情，对齐鸿蒙端）=================
+  var sr = { room: null, members: [], comments: [], replyTo: null, dissolveTimer: null };
+
   function screenStudyroom() {
     if (!requireLogin()) return;
-    $view.innerHTML = '<div class="between"><h2 class="display" style="margin:0">自习室</h2>' +
-      '<div class="row"><button class="btn btn--ghost btn--sm" id="srJoin">加入</button><button class="btn btn--primary btn--sm" id="srCreate">＋ 创建</button></div></div>' +
-      '<div id="srBody" style="margin-top:12px"><div class="empty-hint">加载中…</div></div>';
-    document.getElementById('srCreate').addEventListener('click', srCreateModal);
-    document.getElementById('srJoin').addEventListener('click', srJoinModal);
-    api.call('room.listMine').then(function (data) {
-      sr.rooms = (data && data.list) || [];
-      renderSrList();
-    }).catch(function (err) { document.getElementById('srBody').innerHTML = '<div class="empty-hint">' + h(err.message) + '</div>'; });
+    $view.innerHTML = '<div class="between" style="margin-bottom:12px">' +
+        '<div><h2 class="display" style="margin:0">自习室</h2>' +
+        '<div class="muted3" style="font-size:12px;margin-top:2px">和好友一起，专注不孤单</div></div>' +
+        '<div class="row" id="srActions"></div></div>' +
+      '<div id="srBody"><div class="empty-hint">加载中…</div></div>';
+    loadStudyroom();
   }
-  function renderSrList() {
-    var box = document.getElementById('srBody'); if (!box) return;
-    if (!sr.rooms.length) { box.innerHTML = '<div class="empty-hint">还没有自习室，点右上角「创建」或「加入」</div>'; return; }
-    box.innerHTML = sr.rooms.map(function (r) {
-      return '<div class="card" style="cursor:pointer" data-room="' + h(r.id) + '"><div class="between">' +
-        '<div><div style="font-weight:600">' + h(r.name) + ' ' + (r.role === 'owner' ? '<span class="tag tag--leaf">房主</span>' : '') + (r.need_password ? ' <span class="tag">有密码</span>' : '') + '</div>' +
-        '<div class="muted3" style="font-size:12px;margin-top:4px">' + (r.member_count || 1) + ' 人 · 房间号 ' + h(r.id) + '</div></div>' +
-        '<span class="muted3">›</span></div></div>';
-    }).join('');
-    box.querySelectorAll('[data-room]').forEach(function (n) {
-      n.addEventListener('click', function () { openRoom(n.dataset.room); });
+
+  function loadStudyroom() {
+    api.call('room.listMine').then(function (data) {
+      var list = (data && data.list) || [];
+      if (!list.length) { sr.room = null; sr.members = []; renderEntry(); return; }
+      api.call('room.get', { roomId: list[0].id }).then(function (room) {
+        sr.room = room;
+        sr.members = room.members || [];
+        renderRoomHome();
+      }).catch(function (err) {
+        document.getElementById('srBody').innerHTML = '<div class="empty-hint">' + h(err.message) + '</div>';
+      });
+    }).catch(function (err) {
+      document.getElementById('srBody').innerHTML = '<div class="empty-hint">' + h(err.message) + '</div>';
     });
   }
+
+  function renderEntry() {
+    var actions = document.getElementById('srActions');
+    actions.innerHTML = '<button class="btn btn--ghost btn--sm" id="srJoin">🔑 加入</button>' +
+      '<button class="btn btn--primary btn--sm" id="srCreate">＋ 创建</button>';
+    actions.querySelector('#srJoin').addEventListener('click', srJoinModal);
+    actions.querySelector('#srCreate').addEventListener('click', srCreateModal);
+    document.getElementById('srBody').innerHTML =
+      '<div class="card" id="eJoin" style="text-align:center;padding:30px 0;cursor:pointer">' +
+        '<div style="font-size:30px">🔑</div>' +
+        '<div class="display" style="font-size:17px;margin-top:14px">加入自习室</div>' +
+        '<div class="muted3" style="font-size:12px;margin-top:6px">输入好友分享的房间号 / 加入码</div></div>' +
+      '<div class="card" id="eCreate" style="text-align:center;padding:30px 0;cursor:pointer;margin-top:14px">' +
+        '<div style="font-size:30px">🏠</div>' +
+        '<div class="display" style="font-size:17px;margin-top:14px">创建自习室</div>' +
+        '<div class="muted3" style="font-size:12px;margin-top:6px">新建一个自习室，邀请好友加入</div></div>';
+    document.getElementById('eJoin').addEventListener('click', srJoinModal);
+    document.getElementById('eCreate').addEventListener('click', srCreateModal);
+  }
+
+  function memberName(m) {
+    var uid = auth.getUserId();
+    if (m.user_id === uid) return auth.getNickname() || '我';
+    return m.nickname || ('用户 …' + String(m.user_id || '').slice(-6));
+  }
+
+  function renderRoomHome() {
+    var r = sr.room;
+    var uid = auth.getUserId();
+    var actions = document.getElementById('srActions');
+    actions.innerHTML = '';
+    var order = sr.members.slice().sort(function (a, b) { return (b.focus_minutes || 0) - (a.focus_minutes || 0); });
+    sr.members = order;
+    var focusing = order.filter(function (m) { return m.focusing === 1; }).length;
+    var myRank = 0;
+    order.forEach(function (m, i) { if (m.user_id === uid) myRank = i + 1; });
+    var joinCode = r.join_code || r.id;
+
+    document.getElementById('srBody').innerHTML =
+      '<div class="card">' +
+        '<div class="between" style="align-items:flex-start">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="display" style="font-size:20px;font-weight:700">' + h(r.name) + '</div>' +
+            '<div class="row" id="jcRow" style="align-items:center;gap:6px;margin-top:4px;cursor:pointer">' +
+              '<span class="muted3" style="font-size:11px">加入码</span>' +
+              '<b style="font-size:13.5px">' + h(joinCode) + '</b>' +
+              '<span style="color:var(--leaf);font-size:12px">📋</span></div>' +
+            '<span class="tag" style="margin-top:8px;display:inline-block">' + (r.member_count || order.length || 1) + ' 人</span>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-size:24px;font-weight:800;color:var(--tomato)">' + focusing + '</div>' +
+            '<div class="muted3" style="font-size:10.5px">正在专注中</div>' +
+            '<div style="font-size:20px;font-weight:800;color:var(--tomato);margin-top:8px">' + (myRank || 1) + '</div>' +
+            '<div class="muted3" style="font-size:10.5px">当前排名</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="row" style="margin-top:14px">' +
+          '<button class="btn btn--primary btn--sm" id="srBoard">📖 留言</button>' +
+          '<button class="btn btn--ghost btn--sm" id="srShare">↗ 分享</button>' +
+        '</div>' +
+        (r.daily_min > 0 ? '<div class="muted3" style="font-size:11px;margin-top:10px">每日最低专注 ' + r.daily_min + ' 分钟 · 未达标当日会被移出</div>' : '') +
+      '</div>' +
+      '<div class="section-title display">成员排行</div>' +
+      '<div id="srMembers"></div>' +
+      '<button class="btn btn--ghost" id="srDanger" style="width:100%;margin-top:18px;color:var(--tomato)">' + (r.role === 'owner' ? '解散自习室' : '退出自习室') + '</button>';
+
+    var membersBox = document.getElementById('srMembers');
+    if (!order.length) {
+      membersBox.innerHTML = '<div class="empty-hint">暂无成员</div>';
+    } else {
+      membersBox.innerHTML = order.map(function (m, i) {
+        var rankColor = i === 0 ? '#D9A441' : i === 1 ? '#84917D' : i === 2 ? '#E07A5F' : 'var(--line)';
+        var canKick = r.role === 'owner' && m.user_id !== uid && m.role !== 'owner';
+        return '<div class="card" data-member="' + h(m.user_id) + '" ' + (canKick ? 'data-kick="1" ' : '') + 'style="margin-bottom:10px;display:flex;align-items:center' + (canKick ? ';cursor:pointer' : '') + '">' +
+          '<div style="width:24px;height:24px;border-radius:12px;background:' + rankColor + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">' + (i + 1) + '</div>' +
+          '<div style="flex:1;min-width:0;margin-left:10px">' +
+            '<div class="row" style="align-items:center;gap:6px"><b style="font-size:14px">' + h(memberName(m)) + '</b>' +
+              (m.role === 'owner' ? ' <span class="tag" style="color:#D9A441;background:#F4E8CE">房主</span>' : '') + '</div>' +
+            '<div class="muted3" style="font-size:11.5px;margin-top:3px">今日已专注 ' + (m.today_minutes || 0) + ' 分钟</div>' +
+            '<div class="row" style="gap:6px;margin-top:6px">' +
+              '<span class="tag" style="color:#E07A5F;background:#F6E1D6">连续专注 ' + (m.streak_days || 0) + ' 天</span>' +
+              '<span class="tag" style="color:#D9A441;background:#F4E8CE">共专注 ' + (m.total_days || 0) + ' 天</span></div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:var(--ink)">' + (m.focus_minutes || 0) + '</div>' +
+          '<div class="muted3" style="font-size:10px">分钟</div></div>' +
+        '</div>';
+      }).join('');
+      membersBox.querySelectorAll('[data-kick]').forEach(function (n) {
+        n.addEventListener('click', function () { askKick(n.dataset.member); });
+      });
+    }
+
+    document.getElementById('jcRow').addEventListener('click', function () { copy(joinCode, '加入码已复制'); });
+    document.getElementById('srBoard').addEventListener('click', openBoard);
+    document.getElementById('srShare').addEventListener('click', function () {
+      var text = '青番自习室邀请：' + (auth.getNickname() || '好友') + ' 邀请你进入「' + r.name + '」自习室，房间号 ' + r.id + '，一起专注吧！';
+      copy(text, '分享文案已复制');
+    });
+    document.getElementById('srDanger').addEventListener('click', function () {
+      if (r.role === 'owner') askDelete(); else askLeave();
+    });
+  }
+
   function srCreateModal() {
     var panel = openModal('<div class="modal__title">创建自习室</div>' +
-      '<input class="input" id="rName" placeholder="自习室名称" style="margin-top:12px">' +
-      '<div class="row" style="margin-top:12px"><input class="input" id="rPwd" placeholder="房间密码（可选）"></div>' +
+      '<div class="muted3" style="font-size:11.5px;margin-bottom:10px">起个名字，喊上好友一起学</div>' +
+      '<input class="input" id="rName" placeholder="房间名称">' +
+      '<div class="row" style="align-items:center;justify-content:space-between;margin-top:12px"><span>设置密码</span><input type="checkbox" id="rUsePwd"></div>' +
+      '<input class="input" id="rPwd" placeholder="房间密码" style="margin-top:10px;display:none">' +
+      '<div class="row" style="align-items:center;justify-content:space-between;margin-top:12px"><span>每日最低专注</span><span><input class="input" id="rDaily" value="30" style="width:70px;text-align:right"> 分钟</span></div>' +
+      '<div class="muted3" style="font-size:10.5px;margin-top:6px">未达标当日会被移出；填 0 表示不设限</div>' +
       '<div class="modal__actions"><button class="btn" data-close>取消</button><button class="btn btn--primary" id="rDo">创建</button></div>');
     panel.querySelector('[data-close]').addEventListener('click', closeModal);
+    panel.querySelector('#rUsePwd').addEventListener('change', function (e) {
+      panel.querySelector('#rPwd').style.display = e.target.checked ? '' : 'none';
+    });
     panel.querySelector('#rDo').addEventListener('click', function () {
       var name = panel.querySelector('#rName').value.trim();
       if (!name) { toast('请输入名称'); return; }
-      api.call('room.create', { name: name, password: panel.querySelector('#rPwd').value, platform: 'web' })
-        .then(function (room) { closeModal(); toast('已创建，房间号 ' + room.id); go('studyroom'); })
+      var daily = parseInt(panel.querySelector('#rDaily').value, 10);
+      if (!isFinite(daily) || daily < 0) daily = 30;
+      var usePwd = panel.querySelector('#rUsePwd').checked;
+      api.call('room.create', { name: name, password: usePwd ? panel.querySelector('#rPwd').value : '', dailyMin: daily, nickname: auth.getNickname() || '', platform: 'web' })
+        .then(function (room) { closeModal(); copy(room.id, '已创建，房间号 ' + room.id); loadStudyroom(); })
         .catch(function (err) { toast(err.message || '创建失败'); });
     });
   }
+
   function srJoinModal() {
     var panel = openModal('<div class="modal__title">加入自习室</div>' +
-      '<input class="input" id="rId" placeholder="6 位房间号 / 8 位加入码" style="margin-top:12px">' +
-      '<input class="input" id="rPwd2" placeholder="房间密码（无则留空）" style="margin-top:12px">' +
+      '<div class="muted3" style="font-size:11.5px;margin-bottom:10px">输入好友分享的房间号 / 加入码</div>' +
+      '<input class="input" id="rId" placeholder="房间号 / 加入码">' +
+      '<input class="input" id="rPwd2" placeholder="房间密码（无则留空）" style="margin-top:10px">' +
       '<div class="modal__actions"><button class="btn" data-close>取消</button><button class="btn btn--primary" id="rJoin2">加入</button></div>');
     panel.querySelector('[data-close]').addEventListener('click', closeModal);
     panel.querySelector('#rJoin2').addEventListener('click', function () {
       var id = panel.querySelector('#rId').value.trim();
       if (!id) { toast('请输入房间号'); return; }
-      api.call('room.join', { roomId: id, password: panel.querySelector('#rPwd2').value, platform: 'web' })
-        .then(function (room) { closeModal(); toast('已加入'); openRoom(room.id); })
+      api.call('room.join', { roomId: id, password: panel.querySelector('#rPwd2').value, nickname: auth.getNickname() || '', platform: 'web' })
+        .then(function () { closeModal(); toast('已加入'); loadStudyroom(); })
         .catch(function (err) { toast(err.message || '加入失败'); });
     });
   }
-  function openRoom(roomId) {
-    $view.innerHTML = '<div class="between"><button class="btn btn--ghost btn--sm" id="srBack">‹ 自习室</button><div></div><div style="width:70px"></div></div>' +
-      '<div id="roomBody" style="margin-top:12px"><div class="empty-hint">加载中…</div></div>';
-    document.getElementById('srBack').addEventListener('click', function () { go('studyroom'); });
-    api.call('room.get', { roomId: roomId, platform: 'web' }).then(function (room) {
-      sr.room = room; sr.isOwner = room.role === 'owner'; sr.members = room.members || [];
-      renderRoom();
-      loadComments();
-    }).catch(function (err) {
-      document.getElementById('roomBody').innerHTML = '<div class="empty-hint">' + h(err.message) + '</div>';
-    });
+
+  function openBoard() {
+    sr.replyTo = null;
+    loadBoardComments();
   }
-  function renderRoom() {
-    var r = sr.room;
-    document.getElementById('roomBody').innerHTML =
-      '<div class="card"><div class="between"><div style="font-weight:700;font-size:17px">' + h(r.name) + '</div>' +
-      (r.need_password ? '<span class="tag">有密码</span>' : '') + '</div>' +
-      '<div class="muted3" style="font-size:12px;margin-top:4px">房间号 ' + h(r.id) + ' · ' + (r.member_count || 1) + ' 人</div>' +
-      '<div class="row" style="margin-top:12px">' +
-      '<button class="btn btn--ghost btn--sm" id="rCopy">复制房间号</button>' +
-      '<button class="btn btn--ghost btn--sm" id="rFocus">开始专注</button>' +
-      (sr.isOwner ? '<button class="btn btn--danger btn--sm" id="rDel">解散</button>' : '<button class="btn btn--ghost btn--sm" id="rLeave">退出</button>') +
-      '</div>' +
-      '<div class="divider"></div><div style="font-size:12.5px" class="muted">成员</div>' +
-      '<div style="margin-top:8px">' + sr.members.map(function (m) {
-        return '<div class="between" style="padding:6px 0;font-size:13px"><span>' + (m.role === 'owner' ? '👑 ' : '') + '用户 …' + h(String(m.user_id || '').slice(-6)) + '</span><span class="muted3">' + (m.focus_minutes || 0) + ' 分钟</span></div>';
-      }).join('') + '</div></div>' +
-      '<div class="section-title">房间留言</div><div id="cList"></div>' +
-      '<div class="card" style="margin-top:12px"><textarea class="textarea" id="cInput" placeholder="说点什么…"></textarea>' +
-      '<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn btn--primary btn--sm" id="cSend">发送</button></div></div>';
-    document.getElementById('rCopy').addEventListener('click', function () { copy(r.id, '房间号已复制'); });
-    document.getElementById('rFocus').addEventListener('click', function () {
-      startFocus({ roomId: r.id, roomName: r.name, minutes: 25 });
-    });
-    if (sr.isOwner) document.getElementById('rDel').addEventListener('click', function () {
-      if (!confirm('解散该房间？')) return;
-      api.call('room.delete', { roomId: r.id }).then(function () { toast('已解散'); go('studyroom'); }).catch(function (e) { toast(e.message); });
-    });
-    else document.getElementById('rLeave').addEventListener('click', function () {
-      if (!confirm('退出该房间？')) return;
-      api.call('room.leave', { roomId: r.id }).then(function () { toast('已退出'); go('studyroom'); }).catch(function (e) { toast(e.message); });
-    });
-    document.getElementById('cSend').addEventListener('click', sendComment);
-  }
-  function loadComments() {
+  function loadBoardComments() {
     api.call('comment.list', { roomId: sr.room.id, page: 1, pageSize: 50 }).then(function (data) {
-      sr.comments = (data.list || []).slice().sort(function (a, b) { return Number(b.created_at) - Number(a.created_at); });
-      var box = document.getElementById('cList'); if (!box) return;
-      box.innerHTML = sr.comments.length ? sr.comments.map(function (m) {
-        return '<div class="card" style="margin-bottom:10px"><div class="msg"><div class="msg__avatar">' + h((m.nickname || '匿').slice(0, 1)) + '</div>' +
-          '<div class="grow"><div class="between"><b style="font-size:13px">' + h(m.nickname || '匿名') + '</b><span class="msg__meta">' + fmtTime(m.created_at) + '</span></div>' +
-          '<div class="msg__text">' + (m.reply_to_name ? '<span style="color:var(--leaf-deep)">回复 @' + h(m.reply_to_name) + '：</span>' : '') + h(m.content) + '</div>' +
-          '<div class="row" style="margin-top:6px"><button class="btn btn--ghost btn--sm" data-like="' + m.id + '">' + (m.liked ? '已赞' : '赞') + ' ' + (m.likes || 0) + '</button></div></div></div></div>';
-      }).join('') : '<div class="empty-hint">还没有留言</div>';
-      box.querySelectorAll('[data-like]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var id = b.dataset.like;
-          var cur = sr.comments.find(function (x) { return String(x.id) === String(id); });
-          api.call('comment.like', { roomId: sr.room.id, id: id, action: cur && cur.liked ? 'unlike' : 'like' })
-            .then(loadComments).catch(function (e) { toast(e.message); });
-        });
+      sr.comments = (data.list || []).slice().sort(function (a, b) { return Number(a.created_at) - Number(b.created_at); });
+      renderBoard();
+    }).catch(function (err) { toast(err.message || '加载失败'); });
+  }
+  function renderBoard() {
+    var panel = document.getElementById('boardModalPanel');
+    if (!panel) {
+      panel = openModal('<div class="modal__title">留言</div>' +
+        '<div class="muted3" style="font-size:11px;margin-bottom:10px">' + h(sr.room.name) + '</div>' +
+        '<div id="boardReply"></div>' +
+        '<div class="row" style="gap:8px"><input class="input" id="bInput" placeholder="写一句留言…" style="flex:1"><button class="btn btn--primary" id="bSend">发送</button></div>' +
+        '<div id="boardList" style="margin-top:14px;max-height:300px;overflow:auto"></div>');
+      panel.id = 'boardModalPanel';
+      panel.querySelector('#bSend').addEventListener('click', sendBoardComment);
+      panel.querySelector('#bInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendBoardComment(); });
+    }
+    var replyBox = panel.querySelector('#boardReply');
+    if (sr.replyTo) {
+      replyBox.innerHTML = '<div class="row" style="align-items:center;justify-content:space-between;padding:6px 10px;background:#DCE8CF;border-radius:8px;margin-bottom:8px">' +
+        '<span style="font-size:11.5px;color:#4C7A3E">回复 @' + h(sr.replyTo.nickname) + '</span>' +
+        '<span style="font-size:11.5px;cursor:pointer" id="bCancelReply">取消</span></div>';
+      replyBox.querySelector('#bCancelReply').addEventListener('click', function () { sr.replyTo = null; renderBoard(); });
+    } else {
+      replyBox.innerHTML = '';
+    }
+    panel.querySelector('#boardList').innerHTML = sr.comments.length ? sr.comments.map(function (m, i) {
+      return '<div style="display:flex;gap:8px;padding:8px 0;padding-left:' + ((m.depth || 0) * 16) + 'px">' +
+        '<div class="msg__avatar">' + h((m.nickname || '匿').slice(0, 1)) + '</div>' +
+        '<div style="flex:1;min-width:0"><div class="between"><b style="font-size:12.5px">' + h(m.nickname || '匿名') + '</b><span class="msg__meta">' + fmtTime(m.created_at) + '</span></div>' +
+        '<div style="font-size:13px;line-height:1.5;margin-top:3px">' + (m.reply_to_name ? '<span style="color:#4C7A3E">回复 @' + h(m.reply_to_name) + '：</span>' : '') + h(m.content) + '</div>' +
+        '<div style="font-size:10.5px;color:#4C7A3E;margin-top:4px;cursor:pointer" data-reply="' + i + '">回复</div></div></div>';
+    }).join('') : '<div class="empty-hint">还没有留言，来说点什么吧</div>';
+    panel.querySelectorAll('[data-reply]').forEach(function (n) {
+      n.addEventListener('click', function () {
+        var m = sr.comments[Number(n.dataset.reply)];
+        if (m) { sr.replyTo = { id: m.id, nickname: m.nickname || '匿名' }; renderBoard(); }
       });
-    }).catch(function (err) {
-      var box = document.getElementById('cList'); if (box) box.innerHTML = '<div class="empty-hint">' + h(err.message) + '</div>';
     });
   }
-  function sendComment() {
-    var v = document.getElementById('cInput').value.trim();
+  function sendBoardComment() {
+    var panel = document.getElementById('boardModalPanel');
+    var input = panel.querySelector('#bInput');
+    var v = input.value.trim();
     if (!v) { toast('请输入内容'); return; }
-    api.call('comment.add', { roomId: sr.room.id, content: v, nickname: auth.getNickname() || '匿名', platform: 'web' })
-      .then(function () { document.getElementById('cInput').value = ''; toast('已发送'); loadComments(); })
-      .catch(function (err) { toast(err.message || '发送失败'); });
+    var payload = { roomId: sr.room.id, content: v, nickname: auth.getNickname() || '匿名', platform: 'web' };
+    if (sr.replyTo) payload.parentId = sr.replyTo.id;
+    api.call('comment.add', payload).then(function () {
+      input.value = '';
+      sr.replyTo = null;
+      toast('已发送');
+      loadBoardComments();
+    }).catch(function (err) { toast(err.message || '发送失败'); });
+  }
+
+  function askKick(userId) {
+    var m = sr.members.find(function (x) { return x.user_id === userId; });
+    if (!m) return;
+    var panel = openModal('<div class="modal__title" style="text-align:center">移出成员</div>' +
+      '<div class="muted3" style="text-align:center;margin-top:8px">确定将「' + h(memberName(m)) + '」移出自习室吗？</div>' +
+      '<div class="modal__actions"><button class="btn" data-close>取消</button><button class="btn btn--danger" id="kickOk">移出</button></div>');
+    panel.querySelector('[data-close]').addEventListener('click', closeModal);
+    panel.querySelector('#kickOk').addEventListener('click', function () {
+      api.call('room.kick', { roomId: sr.room.id, targetUserId: userId }).then(function () {
+        closeModal(); toast('已移出该成员'); loadStudyroom();
+      }).catch(function (err) { toast(err.message || '移出失败'); });
+    });
+  }
+
+  function askDelete() {
+    var panel = openModal('<div class="modal__title" style="text-align:center">解散自习室？</div>' +
+      '<div class="muted3" style="text-align:center;margin-top:8px">「' + h(sr.room.name) + '」及其留言将不可见，成员会被移出。</div>' +
+      '<div class="modal__actions"><button class="btn" data-close>取消</button><button class="btn btn--danger" id="delOk" disabled>解散（10s）</button></div>');
+    panel.querySelector('[data-close]').addEventListener('click', closeModal);
+    var ok = panel.querySelector('#delOk');
+    var left = 10;
+    ok.addEventListener('click', function () { if (left <= 0) doDelete(); });
+    if (sr.dissolveTimer) clearInterval(sr.dissolveTimer);
+    sr.dissolveTimer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(sr.dissolveTimer);
+        sr.dissolveTimer = null;
+        ok.disabled = false;
+        ok.textContent = '解散';
+      } else {
+        ok.textContent = '解散（' + left + 's）';
+      }
+    }, 1000);
+  }
+  function doDelete() {
+    if (sr.dissolveTimer) { clearInterval(sr.dissolveTimer); sr.dissolveTimer = null; }
+    api.call('room.delete', { roomId: sr.room.id }).then(function () { closeModal(); toast('已解散自习室'); loadStudyroom(); }).catch(function (e) { toast(e.message); });
+  }
+  function askLeave() {
+    var panel = openModal('<div class="modal__title" style="text-align:center">退出自习室？</div>' +
+      '<div class="muted3" style="text-align:center;margin-top:8px">「' + h(sr.room.name) + '」退出后可在「加入」中重新进入。</div>' +
+      '<div class="modal__actions"><button class="btn" data-close>取消</button><button class="btn btn--danger" id="leaveOk">退出</button></div>');
+    panel.querySelector('[data-close]').addEventListener('click', closeModal);
+    panel.querySelector('#leaveOk').addEventListener('click', function () {
+      api.call('room.leave', { roomId: sr.room.id }).then(function () { closeModal(); toast('已退出'); loadStudyroom(); }).catch(function (e) { toast(e.message); });
+    });
   }
   function copy(text, msg) {
     var done = function () { toast(msg); };
@@ -734,17 +886,25 @@
     else { b.textContent = '登录'; }
   }
 
+  function renderRoute() {
+    var name = current();
+    var fn = ROUTES[name] || ROUTES.today;
+    renderShellNav();
+    refreshUserChip();
+    fn();
+  }
+
   function route() {
     D.applyTheme();
     // 首次进入且未看过引导
     if (!QFStore.get('onboarded', false) && current() !== 'onboarding') {
       location.hash = '#/onboarding'; return;
     }
-    var name = current();
-    var fn = ROUTES[name] || ROUTES.today;
-    renderShellNav();
-    refreshUserChip();
-    fn();
+    renderRoute();
+    // 拉取云端数据（跨端同步）后重渲染
+    if (D.cloudPull) {
+      D.cloudPull().then(function (pulled) { if (pulled) renderRoute(); });
+    }
   }
 
   // shell 导航绑定
