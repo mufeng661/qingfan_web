@@ -249,14 +249,13 @@
   function screenFocus() {
     if (!session) { go('today'); return; }
     var s = session;
-    var bg = D.BACKGROUNDS.find(function (b) { return b.key === s.bg; }) || D.BACKGROUNDS[0];
     $view.innerHTML =
       '<div class="focus-top">' +
       '<button class="focus-top__back" id="fBack" type="button">‹</button>' +
       '<div class="focus-top__title">' + h(s.taskTitle || s.roomName || '自由专注') + '</div>' +
       '<div class="focus-top__no">第 ' + (D.totalPomodoro() + 1) + ' 个番茄</div>' +
       '</div>' +
-      '<div class="focus-stage" id="stage" style="background:linear-gradient(160deg,' + bg.from + ',' + bg.to + ')">' +
+      '<div class="focus-stage" id="stage">' +
       '<div class="focus-ring">' +
       '<svg width="210" height="210" viewBox="0 0 210 210">' +
       '<defs>' +
@@ -287,13 +286,7 @@
       '<button class="focus-btn' + (s.started ? ' is-run' : '') + '" id="fStart" type="button">' + (s.started ? '⏸ 暂停' : '▶ 开始专注') + '</button>' +
       '<button class="focus-exit" id="fExit" type="button">提前退出</button>' +
       '</div>' +
-      '</div>' +
-
-      '<div class="section-title">专注背景</div><div class="pick-row" id="bgRow">' +
-      D.BACKGROUNDS.map(function (b) { return '<div class="bg-pick' + (b.key === s.bg ? ' is-on' : '') + '" data-bg="' + b.key + '"><span class="bg-pick__swatch" style="background:linear-gradient(160deg,' + b.from + ',' + b.to + ')"></span><span class="bg-pick__name">' + b.name + '</span></div>'; }).join('') + '</div>' +
-
-      '<div class="section-title">白噪音</div><div class="pick-row" id="noiseRow">' +
-      D.WHITE_NOISES.map(function (n) { return '<div class="noise-pick' + (n.key === s.noise ? ' is-on' : '') + '" data-noise="' + n.key + '"><span class="noise-pick__icon">' + n.icon + '</span><span class="noise-pick__name">' + n.name + '</span></div>'; }).join('') + '</div>';
+      '</div>';
 
     document.getElementById('fBack').addEventListener('click', function () { if (s.started) { s.started = false; stopTimer(); } session = null; go('today'); });
     document.getElementById('fStart').addEventListener('click', toggleTimer);
@@ -305,12 +298,6 @@
         document.querySelectorAll('#durRow2 .pill').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on');
         paintTimer();
       });
-    });
-    document.getElementById('bgRow').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-bg]'); if (!b) return; s.bg = b.dataset.bg; go('focus');
-    });
-    document.getElementById('noiseRow').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-noise]'); if (!b) return; s.noise = b.dataset.noise; go('focus');
     });
     paintTimer();
   }

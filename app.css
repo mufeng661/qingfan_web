@@ -201,6 +201,7 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
 .focus-stage {
   border-radius: 26px; padding: 22px 20px 24px; color: #fff; text-align: center;
   position: relative; overflow: hidden; margin-top: 14px;
+  background: linear-gradient(160deg, #4c7a3e, #6e9b57);
   box-shadow: 0 18px 44px rgba(30, 40, 26, 0.14);
 }
 .focus-ring { position: relative; width: 210px; height: 210px; margin: 2px auto 0; }
