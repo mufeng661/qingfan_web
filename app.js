@@ -463,41 +463,51 @@
   var aiMsgs = [];
   function screenAi() {
     if (!requireLogin()) return;
+    aiMsgs = QFStore.acct('aiChat', []).slice(-200);
     $view.innerHTML = '<div class="between"><h2 class="display" style="margin:0">AI 助手</h2><button class="btn btn--ghost btn--sm" id="aiClear">清空</button></div>' +
       '<div class="card" id="aiList" style="margin-top:12px;min-height:300px"></div>' +
       '<div class="row" style="margin-top:12px"><input class="input" id="aiInput" placeholder="问问 AI，例如：帮我排一下今天的计划"><button class="btn btn--primary" id="aiSend">发送</button></div>' +
       '<div class="row" style="margin-top:10px;flex-wrap:wrap">' +
       ['帮我制定今日计划', '我最近总被打断怎么办', '如何提升专注时长'].map(function (q) { return '<button class="pill" data-q="' + h(q) + '">' + h(q) + '</button>'; }).join('') + '</div>';
     paintAi();
+    function saveAi() { QFStore.setAcct('aiChat', aiMsgs.slice(-200)); }
     function paintAi() {
       var list = document.getElementById('aiList');
       list.innerHTML = aiMsgs.length ? aiMsgs.map(function (m) {
         return '<div class="msg" style="margin-bottom:12px"><div class="msg__avatar">' + (m.role === 'user' ? '我' : '🤖') + '</div>' +
           '<div class="msg__text" style="' + (m.role === 'user' ? '' : 'color:var(--leaf-deep)') + '">' + h(m.content) + '</div></div>';
       }).join('') : '<div class="empty-hint">和 AI 聊聊你的专注计划吧</div>';
+      list.scrollTop = list.scrollHeight;
     }
     function send(text) {
       text = (text || '').trim(); if (!text) return;
-      aiMsgs.push({ role: 'user', content: text }); paintAi();
+      aiMsgs.push({ role: 'user', content: text }); saveAi(); paintAi();
       document.getElementById('aiInput').value = '';
-      var ctx = { nickname: auth.getNickname(), focusMinutesToday: D.todayFocusMinutes(), streak: D.computeStreak() };
-      var wantPlan = /计划|规划|安排|清单|制定/.test(text);
+      var ctx = { nickname: auth.getNickname(), todayFocusMinutes: D.todayFocusMinutes(), streak: D.computeStreak() };
+      // 用户想“创建/添加任务、制定计划”等时都需要模型返回待办 JSON
+      var wantPlan = /计划|规划|安排|清单|制定|创建|新增|添加|建个|加个|帮我做|提醒|日程|排个|排一下|待办|任务/.test(text);
       api.call('ai.chat', { messages: aiMsgs.slice(-8), context: ctx, wantPlan: wantPlan, platform: 'web' })
         .then(function (data) {
-          aiMsgs.push({ role: 'assistant', content: (data && data.reply) || '……' }); paintAi();
-          if (data && data.todos && data.todos.length) {
+          aiMsgs.push({ role: 'assistant', content: (data && data.reply) || '……' }); saveAi(); paintAi();
+          var todos = (data && data.todos) || [];
+          if (todos.length) {
             var list = D.getTasks();
-            data.todos.forEach(function (t) { list.push({ id: D.uid(), title: t.title, durationMin: t.durationMin || 25, status: 'todo', difficulty: t.difficulty || 'medium', order: list.length, createdAt: Date.now() }); });
-            D.saveTasks(list); toast('已添加 ' + data.todos.length + ' 个待办');
+            todos.forEach(function (t) { list.push({ id: D.uid(), title: t.title, durationMin: t.durationMin || 25, status: 'todo', difficulty: t.difficulty || 'medium', order: list.length, createdAt: Date.now() }); });
+            D.saveTasks(list); toast('已添加 ' + todos.length + ' 个待办，可在「今日」查看');
+          } else if (wantPlan) {
+            toast('AI 未返回可添加的待办，换个说法再试试');
           }
         })
         .catch(function (err) {
-          aiMsgs.push({ role: 'assistant', content: localReply(text) }); paintAi(); toast(err.message || 'AI 暂不可用，已用本地建议');
+          aiMsgs.push({ role: 'assistant', content: localReply(text) }); saveAi(); paintAi(); toast(err.message || 'AI 暂不可用，已用本地建议');
         });
     }
     document.getElementById('aiSend').addEventListener('click', function () { send(document.getElementById('aiInput').value); });
     document.getElementById('aiInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') send(e.target.value); });
-    document.getElementById('aiClear').addEventListener('click', function () { aiMsgs = []; paintAi(); });
+    document.getElementById('aiClear').addEventListener('click', function () {
+      if (!confirm('清空对话记录？')) return;
+      aiMsgs = []; QFStore.setAcct('aiChat', []); paintAi();
+    });
     document.querySelectorAll('[data-q]').forEach(function (b) { b.addEventListener('click', function () { send(b.dataset.q); }); });
   }
   function localReply(text) {
