@@ -395,6 +395,144 @@
   function tabPill(k, label) { return '<button class="pill ' + (tlRange === k ? 'is-on' : '') + '" data-t="' + k + '">' + label + '</button>'; }
 
   // ================= 数据 =================
+  // ===== 月度专注统计（对齐鸿蒙端 DataStats：折线/面积图 + 热力图）=====
+  var dataMonthOffset = 0;
+  function mpad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function monthDate(off) { var now = new Date(); return new Date(now.getFullYear(), now.getMonth() + off, 1); }
+  function monthTitle(off) { var d = monthDate(off); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月'; }
+  function daysInMonth(off) { var d = monthDate(off); return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); }
+  function dayMinutes(off, day) {
+    var d = monthDate(off);
+    var k = d.getFullYear() + '-' + mpad2(d.getMonth() + 1) + '-' + mpad2(day);
+    var s = D.getStats()[k];
+    return s ? (s.focusMinutes || 0) : 0;
+  }
+  function monthMax(off) { var n = daysInMonth(off), mx = 0; for (var i = 1; i <= n; i++) { var v = dayMinutes(off, i); if (v > mx) mx = v; } return mx; }
+  function monthStep(off) {
+    var base = monthMax(off) > 0 ? monthMax(off) : 25;
+    var raw = base / 5;
+    var nice = [1, 2, 5, 10, 15, 20, 25, 30, 50, 60, 100, 120, 180, 240, 300, 600];
+    for (var i = 0; i < nice.length; i++) if (raw <= nice[i]) return nice[i];
+    return Math.ceil(raw / 60) * 60;
+  }
+  function monthNiceMax(off) {
+    var base = monthMax(off) > 0 ? monthMax(off) : 25;
+    var step = monthStep(off);
+    var nice = Math.max(step, Math.ceil(base / step) * step);
+    while (nice / step < 4) nice += step;
+    return nice;
+  }
+  function monthYLabels(off) {
+    var step = monthStep(off), nice = monthNiceMax(off), lines = Math.round(nice / step), out = [];
+    for (var r = 0; r <= lines; r++) out.push((nice - r * step) + '分');
+    return out;
+  }
+  function heatOpacity(m) { if (m <= 0) return 1; if (m < 60) return 0.25; if (m < 120) return 0.6; return 1; }
+  function durText(m) { return m < 60 ? '<1h' : (Math.round(m / 6) / 10) + 'h'; }
+  function monthChartSvg(off) {
+    var n = daysInMonth(off), step = monthStep(off), nice = monthNiceMax(off);
+    var padT = 10, padB = 10, ch = 158 - padT - padB, baseY = padT + ch, dx = 44, padX = 22;
+    var x0 = padX, x1 = padX + (n - 1) * dx, W = n * dx;
+    var lines = Math.round(nice / step), grid = '';
+    for (var r = 0; r <= lines; r++) {
+      var y = padT + ch * r / lines;
+      grid += '<line x1="' + x0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>';
+    }
+    grid += '<line x1="' + x0 + '" y1="' + baseY + '" x2="' + x1 + '" y2="' + baseY + '" stroke="var(--ink3)" stroke-width="1"/>';
+    var pts = [], area = 'M' + x0 + ' ' + baseY;
+    for (var i = 0; i < n; i++) {
+      var xx = x0 + i * dx, yv = baseY - ch * dayMinutes(off, i + 1) / nice;
+      pts.push([xx, yv]); area += ' L' + xx + ' ' + yv;
+    }
+    area += ' L' + x1 + ' ' + baseY + ' Z';
+    var line = '', dots = '';
+    pts.forEach(function (p, i) { line += (i ? ' L' : 'M') + p[0] + ' ' + p[1]; });
+    pts.forEach(function (p) { dots += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.5" fill="var(--tomato)"/>'; });
+    return '<svg width="' + W + '" height="158" viewBox="0 0 ' + W + ' 158" style="display:block">' + grid +
+      '<path d="' + area + '" fill="var(--tomato-soft)"/>' +
+      '<path d="' + line + '" fill="none" stroke="var(--tomato)" stroke-width="2"/>' + dots + '</svg>';
+  }
+  function monthXLabels(off) {
+    var n = daysInMonth(off), mo = monthDate(off).getMonth() + 1, out = [];
+    for (var i = 1; i <= n; i++) out.push('<span style="width:44px;display:inline-block;text-align:center;font-size:10px;color:var(--ink3)">' + mo + '-' + i + '</span>');
+    return out.join('');
+  }
+  function monthCardHtml() {
+    var off = dataMonthOffset;
+    return '<div class="card" style="margin-top:14px">' +
+      '<div class="between">' +
+      '<div class="row" style="gap:8px"><span style="font-family:Georgia,serif;font-size:15px;font-weight:600;color:var(--tomato)">月度专注统计</span>' +
+      '<span style="font-size:14px;font-weight:600;color:var(--tomato)">' + monthTitle(off) + '</span></div>' +
+      '<div class="row" style="gap:2px">' +
+      '<button class="btn btn--ghost btn--sm" id="heatBtn" title="热力图" style="padding:4px 8px">🗓</button>' +
+      '<button class="btn btn--ghost btn--sm" id="mPrev" style="padding:4px 8px">‹</button>' +
+      '<button class="btn btn--ghost btn--sm" id="mNext" style="padding:4px 8px;color:' + (off >= 0 ? 'var(--line)' : 'var(--tomato)') + '">›</button>' +
+      '</div></div>' +
+      '<div class="row" style="margin-top:12px;align-items:stretch">' +
+      '<div style="width:40px;height:158px;display:flex;flex-direction:column;justify-content:space-between;padding:4px 0;font-size:10px;color:var(--ink3)">' +
+      monthYLabels(off).map(function (s) { return '<div>' + s + '</div>'; }).join('') + '</div>' +
+      '<div style="flex:1;min-width:0;overflow-x:auto;margin-left:4px">' + monthChartSvg(off) +
+      '<div style="margin-top:4px;white-space:nowrap">' + monthXLabels(off) + '</div></div>' +
+      '</div></div>';
+  }
+  function heatCells(off) {
+    var d = monthDate(off), n = daysInMonth(off), first = new Date(d.getFullYear(), d.getMonth(), 1);
+    var lead = (first.getDay() + 6) % 7, cells = [];
+    for (var i = 0; i < lead; i++) cells.push({ day: 0, minutes: 0 });
+    for (var day = 1; day <= n; day++) cells.push({ day: day, minutes: dayMinutes(off, day) });
+    return cells;
+  }
+  function heatWeeks(off) {
+    var cells = heatCells(off), weeks = [];
+    for (var i = 0; i < cells.length; i += 7) {
+      var w = cells.slice(i, i + 7);
+      while (w.length < 7) w.push({ day: 0, minutes: 0 });
+      weeks.push(w);
+    }
+    return weeks;
+  }
+  function heatHtml() {
+    var off = dataMonthOffset;
+    var wd = ['一', '二', '三', '四', '五', '六', '日'].map(function (s) {
+      return '<span style="flex:1;text-align:center;font-size:10px;color:var(--ink3)">' + s + '</span>';
+    }).join('');
+    var weeks = heatWeeks(off).map(function (week) {
+      return '<div class="row" style="gap:0">' + week.map(function (c) {
+        var box;
+        if (c.day === 0) box = '<div style="width:34px;height:34px"></div>';
+        else box = '<div style="position:relative;width:34px;height:34px">' +
+          (c.minutes > 0
+            ? '<div style="position:absolute;inset:0;border-radius:9px;background:var(--tomato);opacity:' + heatOpacity(c.minutes) + '"></div>'
+            : '<div style="position:absolute;inset:0;border-radius:9px;background:var(--surface2)"></div>') +
+          (c.minutes > 0 ? '<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff">' + durText(c.minutes) + '</div>' : '') +
+          '</div>';
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center">' + box +
+          '<div style="font-size:10px;color:var(--ink3);margin-top:3px">' + (c.day > 0 ? c.day : '') + '</div></div>';
+      }).join('') + '</div>';
+    }).join('');
+    return '<div>' +
+      '<div class="row" style="justify-content:space-between;align-items:center">' +
+      '<button id="hPrev" style="border:none;background:transparent;font-size:22px;color:var(--tomato);cursor:pointer">‹</button>' +
+      '<div style="font-family:Georgia,serif;font-size:18px;font-weight:700">热力图</div>' +
+      '<button id="hNext" style="border:none;background:transparent;font-size:22px;cursor:pointer;color:' + (off >= 0 ? 'var(--line)' : 'var(--tomato)') + '">›</button>' +
+      '</div>' +
+      '<div style="font-size:13px;color:var(--ink3);text-align:center;margin:6px 0 12px">' + monthTitle(off) + '</div>' +
+      '<div class="row" style="gap:0;margin-bottom:6px">' + wd + '</div>' + weeks +
+      '<div class="row" style="justify-content:center;gap:4px;margin-top:14px;align-items:center;font-size:10px;color:var(--ink3)">少' +
+      '<span style="width:10px;height:10px;border-radius:2px;background:var(--tomato);opacity:.25"></span>' +
+      '<span style="width:10px;height:10px;border-radius:2px;background:var(--tomato);opacity:.6"></span>' +
+      '<span style="width:10px;height:10px;border-radius:2px;background:var(--tomato)"></span>多</div>' +
+      '</div>';
+  }
+  function openHeat() {
+    var panel = openModal(heatHtml());
+    function bind(p) {
+      p.querySelector('#hPrev').addEventListener('click', function () { dataMonthOffset -= 1; p.innerHTML = heatHtml(); bind(p); });
+      p.querySelector('#hNext').addEventListener('click', function () { if (dataMonthOffset < 0) { dataMonthOffset += 1; p.innerHTML = heatHtml(); bind(p); } });
+    }
+    bind(panel);
+  }
+
   function screenData() {
     if (!requireLogin()) return;
     var stats = D.getStats();
@@ -419,12 +557,7 @@
     });
     var interArr = Object.keys(interrupts).map(function (k) { return { k: k, v: interrupts[k] }; });
     var interMax = interArr.reduce(function (a, b) { return Math.max(a, b.v); }, 1);
-    // 月度柱状
-    var monthDays = [];
-    var now = new Date(), y = now.getFullYear(), m = now.getMonth();
-    var dim = new Date(y, m + 1, 0).getDate();
-    for (var i = 1; i <= dim; i++) { var ds = y + '-' + (m + 1 < 10 ? '0' : '') + (m + 1) + '-' + (i < 10 ? '0' : '') + i; monthDays.push(stats[ds] ? stats[ds].focusMinutes : 0); }
-    var monthMax = Math.max.apply(null, monthDays.concat([1]));
+    // 月度专注统计见 monthCardHtml()
 
     $view.innerHTML = '<h2 class="display" style="margin:0 0 12px">数据</h2>' +
       '<div class="card"><div class="overview">' + cell(totalMin, '累计专注(分)') + cell(totalPomo, '累计番茄') + cell(avg, '日均(分)') + '</div></div>' +
@@ -436,9 +569,7 @@
         return '<div class="row" style="justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + colors[i % colors.length] + ';margin-right:6px"></i>' + h(t.name) + '</span><span class="muted3">' + t.min + ' 分</span></div>';
       }).join('') : '<div class="empty-hint" style="padding:10px">暂无数据</div>') + '</div></div></div>' +
 
-      '<div class="section-title">本月专注</div><div class="card"><div class="row" style="align-items:flex-end;gap:2px;height:110px;overflow-x:auto">' +
-      monthDays.map(function (v) { var hh = Math.round(v / monthMax * 96); return '<div title="' + v + ' 分" style="flex:none;width:6px;height:' + Math.max(2, hh) + 'px;background:var(--leaf);border-radius:3px 3px 0 0"></div>'; }).join('') +
-      '</div><div class="muted3" style="font-size:11.5px;margin-top:6px">' + y + ' 年 ' + (m + 1) + ' 月（每天 1 根）</div></div>' +
+      monthCardHtml() +
 
       '<div class="section-title">打断原因分布</div><div class="card">' +
       (interArr.length ? interArr.map(function (x) {
@@ -449,6 +580,9 @@
       '<div class="section-title">AI 洞察</div><div class="card aicard" id="insightCard"><div style="font-size:13px;line-height:1.6" id="insightText">正在生成…</div></div>';
 
     loadInsight();
+    document.getElementById('mPrev').addEventListener('click', function () { dataMonthOffset -= 1; route(); });
+    document.getElementById('mNext').addEventListener('click', function () { if (dataMonthOffset < 0) { dataMonthOffset += 1; route(); } });
+    document.getElementById('heatBtn').addEventListener('click', openHeat);
   }
   function loadInsight() {
     var el = document.getElementById('insightText'); if (!el) return;
