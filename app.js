@@ -260,7 +260,7 @@
       '<div class="focus-ring__time"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
       '</div>' +
       (s.taskId
-        ? '<div class="center" style="margin-top:16px"><span class="tag tag--leaf">时长由待办决定 · ' + s.minutes + ' 分钟（不可更改）</span></div>'
+        ? ''
         : '<div class="row" style="justify-content:center;margin-top:16px" id="durRow2">' +
           D.DURATIONS.map(function (m) { return '<button class="pill ' + (m === s.minutes ? 'is-on' : '') + '" data-m="' + m + '">' + m + ' 分</button>'; }).join('') +
           '</div>') +
