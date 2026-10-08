@@ -259,9 +259,11 @@
       '<circle id="ring" cx="105" cy="105" r="94" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="590" stroke-dashoffset="0"></circle></svg>' +
       '<div class="focus-ring__time"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
       '</div>' +
-      '<div class="row" style="justify-content:center;margin-top:16px" id="durRow2">' +
-      D.DURATIONS.map(function (m) { return '<button class="pill ' + (m === s.minutes ? 'is-on' : '') + '" data-m="' + m + '">' + m + ' 分</button>'; }).join('') +
-      '</div>' +
+      (s.taskId
+        ? '<div class="center" style="margin-top:16px"><span class="tag tag--leaf">时长由待办决定 · ' + s.minutes + ' 分钟（不可更改）</span></div>'
+        : '<div class="row" style="justify-content:center;margin-top:16px" id="durRow2">' +
+          D.DURATIONS.map(function (m) { return '<button class="pill ' + (m === s.minutes ? 'is-on' : '') + '" data-m="' + m + '">' + m + ' 分</button>'; }).join('') +
+          '</div>') +
       '<div class="row" style="justify-content:center;margin-top:16px;gap:12px">' +
       '<button class="btn btn--primary" id="fStart" style="min-width:130px">' + (s.started ? '暂停' : '开始专注') + '</button>' +
       '<button class="btn btn--ghost" id="fExit">提前退出</button></div>' +
