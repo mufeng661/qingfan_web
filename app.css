@@ -186,6 +186,28 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
 .task--drag { outline: 2px dashed var(--leaf); }
 
 /* ===== 专注 ===== */
+.focus-screen {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--leaf-deep), var(--leaf));
+  color: #fff; padding: 24px; overflow: auto;
+}
+.focus-screen__top {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 10px; padding: 16px 18px;
+}
+.focus-screen__sub {
+  flex: 1; min-width: 0; text-align: center;
+  font-family: Georgia, "Songti SC", serif; font-size: 15px; color: #fff;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.focus-screen__no { flex: none; font-size: 11.5px; color: rgba(255, 255, 255, 0.85); }
+.focus-screen .focus-top__back { color: #fff; }
+.focus-screen .focus-top__back:hover { background: rgba(255, 255, 255, 0.14); }
+.focus-screen__body { display: flex; flex-direction: column; align-items: center; }
+.focus-screen .pill { background: rgba(255, 255, 255, 0.22); color: #fff; border: 1px solid transparent; }
+.focus-screen .pill.is-on { background: rgba(255, 255, 255, 0.92); color: var(--tomato); font-weight: 700; }
+
 .focus-top { display: flex; align-items: center; gap: 10px; }
 .focus-top__back {
   flex: none; width: 34px; height: 34px; border: none; border-radius: 10px;
@@ -204,11 +226,11 @@ h1, h2, h3, .display { font-family: Georgia, "Times New Roman", "Songti SC", "Si
   background: linear-gradient(160deg, #4c7a3e, #6e9b57);
   box-shadow: 0 18px 44px rgba(30, 40, 26, 0.14);
 }
-.focus-ring { position: relative; width: 210px; height: 210px; margin: 2px auto 0; }
+.focus-ring { position: relative; width: 230px; height: 230px; margin: 2px auto 0; }
 .focus-ring svg { display: block; overflow: visible; }
 .focus-ring__time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .focus-ring__time b {
-  font-family: Georgia, serif; font-size: 38px; letter-spacing: 0.02em;
+  font-family: Georgia, serif; font-size: 40px; letter-spacing: 0.02em;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 .focus-ring__time span { font-size: 12px; margin-top: 4px; color: rgba(255, 255, 255, 0.9); }
