@@ -251,40 +251,49 @@
     var s = session;
     var bg = D.BACKGROUNDS.find(function (b) { return b.key === s.bg; }) || D.BACKGROUNDS[0];
     $view.innerHTML =
-      '<div class="between"><button class="btn btn--ghost btn--sm" id="fBack">‹ 返回</button>' +
-      '<div class="muted">' + h(s.taskTitle || s.roomName || '自由专注') + '</div><div style="width:64px"></div></div>' +
-      '<div class="focus-stage" id="stage" style="margin-top:14px;background:linear-gradient(160deg,' + bg.from + ',' + bg.to + ')">' +
+      '<div class="focus-top">' +
+      '<button class="focus-top__back" id="fBack" type="button">‹</button>' +
+      '<div class="focus-top__title">' + h(s.taskTitle || s.roomName || '自由专注') + '</div>' +
+      '<div class="focus-top__no">第 ' + (D.totalPomodoro() + 1) + ' 个番茄</div>' +
+      '</div>' +
+      '<div class="focus-stage" id="stage" style="background:linear-gradient(160deg,' + bg.from + ',' + bg.to + ')">' +
       '<div class="focus-ring">' +
       '<svg width="210" height="210" viewBox="0 0 210 210">' +
-      '<defs><radialGradient id="tomatoG" cx="38%" cy="28%" r="80%">' +
-      '<stop offset="0%" stop-color="#FF9C82"/><stop offset="55%" stop-color="#E7604A"/><stop offset="100%" stop-color="#B83A2A"/>' +
-      '</radialGradient></defs>' +
-      '<g fill="#5E8C4A" transform="translate(105 32)">' +
+      '<defs>' +
+      '<radialGradient id="tomatoG" cx="38%" cy="28%" r="80%"><stop offset="0%" stop-color="#FF9C82"/><stop offset="52%" stop-color="#E7604A"/><stop offset="100%" stop-color="#B83A2A"/></radialGradient>' +
+      '<radialGradient id="glowG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.42"/><stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.12"/><stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
+      '<filter id="tomatoShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#000000" flood-opacity="0.28"/></filter>' +
+      '</defs>' +
+      '<circle cx="105" cy="108" r="104" fill="url(#glowG)"/>' +
+      '<g filter="url(#tomatoShadow)">' +
+      '<g fill="#5E8C4A" transform="translate(105 34)">' +
       ['0', '-45', '45', '-90', '90'].map(function (a) { return '<path d="M0 -21 C-6 -12 -6 -2 0 5 C6 -2 6 -12 0 -21 Z" transform="rotate(' + a + ')"/>'; }).join('') +
       '</g>' +
-      '<path d="M105 14 q5 -9 12 -12" stroke="#4C7A3E" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="105" cy="110" r="95" fill="url(#tomatoG)"/>' +
-      '<circle cx="105" cy="108" r="88" fill="rgba(255,255,255,0.10)"/>' +
-      '<circle cx="105" cy="110" r="72" fill="none" stroke="rgba(255,255,255,0.30)" stroke-width="6"/>' +
-      '<circle id="ring" cx="105" cy="110" r="72" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-dasharray="452" stroke-dashoffset="0" transform="rotate(-90 105 110)"/>' +
+      '<path d="M105 16 q6 -10 13 -13" stroke="#4C7A3E" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="105" cy="108" rx="96" ry="92" fill="url(#tomatoG)"/>' +
+      '<ellipse cx="76" cy="74" rx="26" ry="17" fill="rgba(255,255,255,0.32)" transform="rotate(-28 76 74)"/>' +
+      '</g>' +
+      '<circle cx="105" cy="108" r="72" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="6"/>' +
+      '<circle id="ring" cx="105" cy="108" r="72" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-dasharray="452" stroke-dashoffset="0" transform="rotate(-90 105 108)"/>' +
       '</svg>' +
-      '<div class="focus-ring__time" style="padding-top:16px"><b id="ftime" style="font-size:38px">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
+      '<div class="focus-ring__time" style="padding-top:6px"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
       '</div>' +
       (s.taskId
         ? ''
-        : '<div class="row" style="justify-content:center;margin-top:16px" id="durRow2">' +
+        : '<div class="row" style="justify-content:center;margin-top:6px" id="durRow2">' +
           D.DURATIONS.map(function (m) { return '<button class="pill ' + (m === s.minutes ? 'is-on' : '') + '" data-m="' + m + '">' + m + ' 分</button>'; }).join('') +
           '</div>') +
-      '<div class="row" style="justify-content:center;margin-top:16px;gap:12px">' +
-      '<button class="btn btn--primary" id="fStart" style="min-width:130px">' + (s.started ? '暂停' : '开始专注') + '</button>' +
-      '<button class="btn btn--ghost" id="fExit">提前退出</button></div>' +
+      '<div class="focus-ctl">' +
+      '<button class="focus-btn' + (s.started ? ' is-run' : '') + '" id="fStart" type="button">' + (s.started ? '⏸ 暂停' : '▶ 开始专注') + '</button>' +
+      '<button class="focus-exit" id="fExit" type="button">提前退出</button>' +
+      '</div>' +
       '</div>' +
 
-      '<div class="section-title">专注背景</div><div class="row" id="bgRow">' +
-      D.BACKGROUNDS.map(function (b) { return '<button class="pill ' + (b.key === s.bg ? 'is-on' : '') + '" data-bg="' + b.key + '">' + b.name + '</button>'; }).join('') + '</div>' +
+      '<div class="section-title">专注背景</div><div class="pick-row" id="bgRow">' +
+      D.BACKGROUNDS.map(function (b) { return '<div class="bg-pick' + (b.key === s.bg ? ' is-on' : '') + '" data-bg="' + b.key + '"><span class="bg-pick__swatch" style="background:linear-gradient(160deg,' + b.from + ',' + b.to + ')"></span><span class="bg-pick__name">' + b.name + '</span></div>'; }).join('') + '</div>' +
 
-      '<div class="section-title">白噪音</div><div class="row" id="noiseRow">' +
-      D.WHITE_NOISES.map(function (n) { return '<button class="pill ' + (n.key === s.noise ? 'is-on' : '') + '" data-noise="' + n.key + '">' + n.icon + ' ' + n.name + '</button>'; }).join('') + '</div>';
+      '<div class="section-title">白噪音</div><div class="pick-row" id="noiseRow">' +
+      D.WHITE_NOISES.map(function (n) { return '<div class="noise-pick' + (n.key === s.noise ? ' is-on' : '') + '" data-noise="' + n.key + '"><span class="noise-pick__icon">' + n.icon + '</span><span class="noise-pick__name">' + n.name + '</span></div>'; }).join('') + '</div>';
 
     document.getElementById('fBack').addEventListener('click', function () { if (s.started) { s.started = false; stopTimer(); } session = null; go('today'); });
     document.getElementById('fStart').addEventListener('click', toggleTimer);
@@ -319,7 +328,8 @@
     if (s.started) { s.started = false; stopTimer(); }
     else { s.started = true; tick(); s.timer = setInterval(tick, 1000); }
     paintTimer();
-    document.getElementById('fStart').textContent = s.started ? '暂停' : '开始专注';
+    var fb = document.getElementById('fStart');
+    if (fb) { fb.textContent = s.started ? '⏸ 暂停' : '▶ 开始专注'; fb.classList.toggle('is-run', s.started); }
   }
   function stopTimer() { if (session && session.timer) { clearInterval(session.timer); session.timer = null; } }
   function tick() {
