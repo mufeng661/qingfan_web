@@ -256,18 +256,19 @@
       '<div class="focus-stage" id="stage" style="margin-top:14px;background:linear-gradient(160deg,' + bg.from + ',' + bg.to + ')">' +
       '<div class="focus-ring">' +
       '<svg width="210" height="210" viewBox="0 0 210 210">' +
-      '<defs><radialGradient id="tomatoG" cx="38%" cy="30%" r="78%">' +
+      '<defs><radialGradient id="tomatoG" cx="38%" cy="28%" r="80%">' +
       '<stop offset="0%" stop-color="#FF9C82"/><stop offset="55%" stop-color="#E7604A"/><stop offset="100%" stop-color="#B83A2A"/>' +
       '</radialGradient></defs>' +
-      '<g fill="#5E8C4A" transform="translate(105 30)">' +
-      ['0', '-45', '45', '-90', '90'].map(function (a) { return '<path d="M0 -20 C-5 -11 -5 -2 0 5 C5 -2 5 -11 0 -20 Z" transform="rotate(' + a + ')"/>'; }).join('') +
+      '<g fill="#5E8C4A" transform="translate(105 32)">' +
+      ['0', '-45', '45', '-90', '90'].map(function (a) { return '<path d="M0 -21 C-6 -12 -6 -2 0 5 C6 -2 6 -12 0 -21 Z" transform="rotate(' + a + ')"/>'; }).join('') +
       '</g>' +
-      '<path d="M105 12 q5 -9 12 -12" stroke="#4C7A3E" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="105" cy="110" r="90" fill="url(#tomatoG)"/>' +
-      '<circle cx="105" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="7"/>' +
-      '<circle id="ring" cx="105" cy="110" r="90" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="0" transform="rotate(-90 105 110)"/>' +
+      '<path d="M105 14 q5 -9 12 -12" stroke="#4C7A3E" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="105" cy="110" r="95" fill="url(#tomatoG)"/>' +
+      '<circle cx="105" cy="108" r="88" fill="rgba(255,255,255,0.10)"/>' +
+      '<circle cx="105" cy="110" r="72" fill="none" stroke="rgba(255,255,255,0.30)" stroke-width="6"/>' +
+      '<circle id="ring" cx="105" cy="110" r="72" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-dasharray="452" stroke-dashoffset="0" transform="rotate(-90 105 110)"/>' +
       '</svg>' +
-      '<div class="focus-ring__time" style="padding-top:16px"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
+      '<div class="focus-ring__time" style="padding-top:16px"><b id="ftime" style="font-size:38px">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
       '</div>' +
       (s.taskId
         ? ''
@@ -309,7 +310,7 @@
     var total = s.minutes * 60;
     var ratio = total ? s.remain / total : 0;
     var ring = document.getElementById('ring');
-    if (ring) ring.setAttribute('stroke-dashoffset', String(Math.round(565 * (1 - ratio))));
+    if (ring) ring.setAttribute('stroke-dashoffset', String(Math.round(452 * (1 - ratio))));
     var ft = document.getElementById('ftime'); if (ft) ft.textContent = fmtClock(s.remain);
     var fs = document.getElementById('fstate'); if (fs) fs.textContent = s.started ? '专注中' : '准备开始';
   }
