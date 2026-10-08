@@ -255,9 +255,19 @@
       '<div class="muted">' + h(s.taskTitle || s.roomName || '自由专注') + '</div><div style="width:64px"></div></div>' +
       '<div class="focus-stage" id="stage" style="margin-top:14px;background:linear-gradient(160deg,' + bg.from + ',' + bg.to + ')">' +
       '<div class="focus-ring">' +
-      '<svg width="210" height="210"><circle cx="105" cy="105" r="94" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="11"></circle>' +
-      '<circle id="ring" cx="105" cy="105" r="94" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="590" stroke-dashoffset="0"></circle></svg>' +
-      '<div class="focus-ring__time"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
+      '<svg width="210" height="210" viewBox="0 0 210 210">' +
+      '<defs><radialGradient id="tomatoG" cx="38%" cy="30%" r="78%">' +
+      '<stop offset="0%" stop-color="#FF9C82"/><stop offset="55%" stop-color="#E7604A"/><stop offset="100%" stop-color="#B83A2A"/>' +
+      '</radialGradient></defs>' +
+      '<g fill="#5E8C4A" transform="translate(105 30)">' +
+      ['0', '-45', '45', '-90', '90'].map(function (a) { return '<path d="M0 -20 C-5 -11 -5 -2 0 5 C5 -2 5 -11 0 -20 Z" transform="rotate(' + a + ')"/>'; }).join('') +
+      '</g>' +
+      '<path d="M105 12 q5 -9 12 -12" stroke="#4C7A3E" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="105" cy="110" r="90" fill="url(#tomatoG)"/>' +
+      '<circle cx="105" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="7"/>' +
+      '<circle id="ring" cx="105" cy="110" r="90" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="0" transform="rotate(-90 105 110)"/>' +
+      '</svg>' +
+      '<div class="focus-ring__time" style="padding-top:16px"><b id="ftime">' + fmtClock(s.remain) + '</b><span id="fstate">' + (s.started ? '专注中' : '准备开始') + '</span></div>' +
       '</div>' +
       (s.taskId
         ? ''
@@ -299,7 +309,7 @@
     var total = s.minutes * 60;
     var ratio = total ? s.remain / total : 0;
     var ring = document.getElementById('ring');
-    if (ring) ring.setAttribute('stroke-dashoffset', String(Math.round(590 * (1 - ratio))));
+    if (ring) ring.setAttribute('stroke-dashoffset', String(Math.round(565 * (1 - ratio))));
     var ft = document.getElementById('ftime'); if (ft) ft.textContent = fmtClock(s.remain);
     var fs = document.getElementById('fstate'); if (fs) fs.textContent = s.started ? '专注中' : '准备开始';
   }
